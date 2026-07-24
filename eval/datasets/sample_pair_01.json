@@ -1,0 +1,43 @@
+[
+  {
+    "pair_id": "sample_01",
+    "description": "Simple native PDF pair. Rev B adds one label, removes one dimension, and modifies one note.",
+    "pid_a_path": "data/samples/sample_01_rev_a.pdf",
+    "pid_b_path": "data/samples/sample_01_rev_b.pdf",
+    "ground_truth_deltas": [
+      {
+        "delta_type": "ADDED",
+        "page_number": 1,
+        "text_content": "Valve V-201",
+        "region": "top-right"
+      },
+      {
+        "delta_type": "REMOVED",
+        "page_number": 1,
+        "text_content": "150mm",
+        "region": "center"
+      },
+      {
+        "delta_type": "MODIFIED",
+        "page_number": 2,
+        "text_content_before": "See Detail A",
+        "text_content_after": "See Detail B",
+        "region": "bottom-left"
+      }
+    ],
+    "ground_truth_qa": [
+      {
+        "question": "What was added in revision B?",
+        "expected_keywords": ["Valve V-201", "added", "page 1"]
+      },
+      {
+        "question": "Did any dimensions change?",
+        "expected_keywords": ["150mm", "removed", "page 1"]
+      },
+      {
+        "question": "What changed on page 2?",
+        "expected_keywords": ["Detail A", "Detail B", "modified", "page 2"]
+      }
+    ]
+  }
+]
