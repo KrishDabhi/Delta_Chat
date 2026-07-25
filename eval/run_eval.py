@@ -165,7 +165,7 @@ def run_eval():
         for f in report.failures:
             print(f"  [{f.pair_id}] {f.stage}: {f.error}")
     else:
-        print("\n✅ No failures.")
+        print("\n[SUCCESS] No failures.")
 
 
 if __name__ == "__main__":
