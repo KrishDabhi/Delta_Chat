@@ -69,29 +69,29 @@ def _entry_to_text(entry: DeltaEntry, job_id: str) -> str:
     prefix = f"[Delta Report | Job: {job_id} | Page {page} | {region}]"
 
     if entry.delta_type == DeltaType.ADDED:
-        content = entry.target_entity.text_content if entry.target_entity else "[geometry]"
+        content = entry.target_entity.text_content if (entry.target_entity and entry.target_entity.text_content.strip()) else "[geometry]"
         return (
             f"{prefix} ADDED (confidence: {confidence}%): "
             f'The content "{content}" was added to the document in revision B.'
         )
 
     if entry.delta_type == DeltaType.REMOVED:
-        content = entry.source_entity.text_content if entry.source_entity else "[geometry]"
+        content = entry.source_entity.text_content if (entry.source_entity and entry.source_entity.text_content.strip()) else "[geometry]"
         return (
             f"{prefix} REMOVED (confidence: {confidence}%): "
             f'The content "{content}" was present in revision A but removed in revision B.'
         )
 
     if entry.delta_type == DeltaType.MODIFIED:
-        src = entry.source_entity.text_content if entry.source_entity else "[geometry]"
-        tgt = entry.target_entity.text_content if entry.target_entity else "[geometry]"
+        src = entry.source_entity.text_content if (entry.source_entity and entry.source_entity.text_content.strip()) else "[geometry]"
+        tgt = entry.target_entity.text_content if (entry.target_entity and entry.target_entity.text_content.strip()) else "[geometry]"
         return (
             f"{prefix} MODIFIED (confidence: {confidence}%): "
             f'Content changed from "{src}" in revision A to "{tgt}" in revision B.'
         )
 
     if entry.delta_type == DeltaType.MOVED:
-        content = entry.source_entity.text_content if entry.source_entity else "[geometry]"
+        content = entry.source_entity.text_content if (entry.source_entity and entry.source_entity.text_content.strip()) else "[geometry]"
         src_region = entry.source_entity.bbox if entry.source_entity else None
         tgt_region = entry.target_entity.bbox if entry.target_entity else None
         return (

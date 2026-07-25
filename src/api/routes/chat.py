@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/v1/chat", tags=["Chat"])
 
 
 @router.post("", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
+def chat_endpoint(request: ChatRequest):
     """
     Ask a grounded question about the documents and delta report
     for a specific ingestion job.
