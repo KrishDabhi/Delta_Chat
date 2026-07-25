@@ -17,9 +17,29 @@ from src.reporting.generator import generate_report
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1/delta", tags=["Delta"])
 
-# In-memory job store. In production this would be Redis or a DB.
+import json
+
+def _get_jobs_db_path() -> Path:
+    db_path = Path(settings.DATA_DIR).parent / "jobs_db.json"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    return db_path
+
+def _load_jobs_from_disk() -> Dict[str, dict]:
+    path = _get_jobs_db_path()
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+def _save_jobs_to_disk(jobs_dict: Dict[str, dict]):
+    path = _get_jobs_db_path()
+    path.write_text(json.dumps(jobs_dict, indent=2), encoding="utf-8")
+
+# In-memory job store backed by disk persistence.
 # Stores job status and results keyed by job_id.
-_jobs: Dict[str, dict] = {}
+_jobs: Dict[str, dict] = _load_jobs_from_disk()
 
 # ProcessPoolExecutor for CPU-heavy parsing (OpenCV, Tesseract, RANSAC)
 # Max workers = 2 to avoid overwhelming the server; each parse job is single-file.
@@ -27,7 +47,7 @@ _executor = ProcessPoolExecutor(max_workers=2)
 
 
 @router.post("/ingest", response_model=IngestResponse)
-async def ingest_documents(request: IngestRequest):
+async def ingest_documents(request: IngestRequest, bg_tasks: BackgroundTasks):
     """
     Upload two document revisions and trigger the full delta pipeline.
 
@@ -53,6 +73,7 @@ async def ingest_documents(request: IngestRequest):
             )
 
     _jobs[job_id] = {"status": "processing", "label": request.job_label}
+    _save_jobs_to_disk(_jobs)
     logger.info(
         "ingest_job_accepted",
         job_id=job_id,
@@ -61,13 +82,23 @@ async def ingest_documents(request: IngestRequest):
     )
 
     # Run the heavy pipeline in a background task so we return immediately
-    asyncio.get_event_loop().run_in_executor(
-        _executor,
-        _run_pipeline_sync,
-        job_id,
-        request.pid_a_path,
-        request.pid_b_path,
-    )
+    async def run_and_update():
+        loop = asyncio.get_event_loop()
+        try:
+            result = await loop.run_in_executor(
+                _executor,
+                _run_pipeline_sync,
+                job_id,
+                request.pid_a_path,
+                request.pid_b_path,
+            )
+            _jobs[job_id].update(result)
+        except Exception as e:
+            _jobs[job_id].update({"status": "failed", "error": str(e)})
+        finally:
+            _save_jobs_to_disk(_jobs)
+
+    bg_tasks.add_task(run_and_update)
 
     return IngestResponse(
         job_id=job_id,
@@ -110,7 +141,8 @@ def _run_pipeline_sync(job_id: str, pid_a_path: str, pid_b_path: str):
         index_chunks(rev_b_chunks, job_id, "rev_b")
         index_chunks(report_bundle.rag_chunks, job_id, "delta_report")
 
-        _jobs[job_id].update({
+        logger.info("pipeline_complete", job_id=job_id, delta_count=len(delta_entries))
+        return {
             "status": "complete",
             "format_a": format_a.value,
             "format_b": format_b.value,
@@ -118,12 +150,11 @@ def _run_pipeline_sync(job_id: str, pid_a_path: str, pid_b_path: str):
             "entity_count_b": len(entities_b),
             "delta_count": len(delta_entries),
             "output_dir": output_dir,
-        })
-        logger.info("pipeline_complete", job_id=job_id, delta_count=len(delta_entries))
+        }
 
     except Exception as e:
-        _jobs[job_id].update({"status": "failed", "error": str(e)})
         logger.error("pipeline_failed", job_id=job_id, error=str(e), exc_info=True)
+        return {"status": "failed", "error": str(e)}
 
 
 @router.get("/{job_id}/status", response_model=IngestResponse)
