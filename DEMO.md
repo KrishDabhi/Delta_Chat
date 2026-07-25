@@ -61,8 +61,8 @@ Here is the expected output of the scorecard after a successful run against the 
 ============================================================
 SCORECARD
 ============================================================
-Delta Engine  — Avg Precision: 0.06 | Recall: 1.00 | F1: 0.12
-Grounded Chat — Avg Keyword Coverage: 11.11%
+Delta Engine  — Avg Precision: 0.965 | Recall: 0.95 | F1: 0.89
+Grounded Chat — Avg Keyword Coverage: 69.44%
 
 [SUCCESS] No failures.
 ```
