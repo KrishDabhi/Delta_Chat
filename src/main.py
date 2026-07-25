@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from src.api.routes import delta as delta_router
 from src.api.routes import chat as chat_router
+from src.api.routes import eval as eval_router
 from src.core.config import settings
 from src.observability.logging import get_logger
 
@@ -19,6 +20,7 @@ app = FastAPI(
 
 app.include_router(delta_router.router)
 app.include_router(chat_router.router)
+app.include_router(eval_router.router)
 
 
 @app.get("/health", tags=["Health"])

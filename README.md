@@ -144,7 +144,15 @@ The system abandons generative LLMs (Vision Models) during the ingestion and com
 
 The repository includes a deterministic evaluation harness to verify Delta Engine accuracy (Precision/Recall/F1) and Chatbot grounding (Keyword Coverage) without relying on an "LLM-as-a-judge".
 
-To run the scorecard eval against labeled ground-truth datasets:
+### Option A: via API
+You can programmatically trigger the evaluation and receive a structured JSON report containing metrics for all pairs and any failure cases:
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/eval"
+```
+
+### Option B: via CLI
+To run the scorecard eval locally against labeled ground-truth datasets and print the scorecard:
 
 ```bash
 python eval/run_eval.py

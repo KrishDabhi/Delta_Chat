@@ -195,3 +195,42 @@ class ChatResponse(BaseModel):
     retrieval_chunk_count: int = Field(
         default=0, description="Number of RAG chunks retrieved and fed to the LLM."
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Evaluation API Models
+# ─────────────────────────────────────────────────────────────────────────────
+
+class DeltaMetrics(BaseModel):
+    precision: float
+    recall: float
+    f1: float
+    true_positives: int
+    false_positives: int
+    false_negatives: int
+
+
+class ChatMetrics(BaseModel):
+    avg_keyword_coverage: float
+
+
+class FailureCase(BaseModel):
+    pair_id: str
+    stage: str
+    error: str
+
+
+class PairEvalResult(BaseModel):
+    pair_id: str
+    delta_metrics: Optional[DeltaMetrics] = None
+    chat_metrics: Optional[ChatMetrics] = None
+    status: str
+
+
+class EvalReportResponse(BaseModel):
+    overall_delta_precision: float
+    overall_delta_recall: float
+    overall_delta_f1: float
+    overall_chat_keyword_coverage: float
+    pair_results: list[PairEvalResult]
+    failures: list[FailureCase]
